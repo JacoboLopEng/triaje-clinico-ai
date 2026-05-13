@@ -71,7 +71,7 @@ if st.session_state.fase == 2:
     st.markdown("### 2️⃣ Cuestionario Dirigido (Generado por IA)")
     
     with st.container(border=True):
-        st.info(f"**Motivo registrado:** {motivo}")
+        st.info(f"**Motivo registrado:** {st.session_state.datos_iniciales['motivo']}")
         st.markdown("Responde rápidamente a las siguientes cuestiones:")
         
         # Generamos los selectores dinámicamente según lo que diga la IA
