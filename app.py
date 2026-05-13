@@ -145,7 +145,7 @@ except Exception as e:
     st.error("❌ Error configurando Gemini")
     st.stop()
 
-def motor_triaje(sintomas, dolor, edad):
+def motor_triaje(sintomas, dolor, edad, fc, tas, spo2, temp):
     prompt_completo = f"""
     Actúa como un Jefe de Urgencias Hospitalarias experto en Triaje Avanzado.
     
@@ -162,6 +162,11 @@ def motor_triaje(sintomas, dolor, edad):
     Paciente real a evaluar:
     Edad: {edad} años. 
     Nivel de dolor: {dolor}/10. 
+    Constantes Vitales:
+    - Frecuencia Cardíaca: {fc} bpm
+    - Tensión Arterial Sistólica: {tas} mmHg
+    - Saturación O2: {spo2}%
+    - Temperatura: {temp} ºC
     Anamnesis: {sintomas}.
 
     Debes devolver UNICAMENTE un JSON estricto con esta estructura:
@@ -244,9 +249,22 @@ elif menu == "Nueva Admisión":
         with col_id3:
             edad = st.number_input("Edad (Años)", 0, 120, 30)
 
-    # Contenedor 2: Clínica
+    # NUEVO Contenedor 2: Constantes Vitales
     with st.container(border=True):
-        st.markdown("#### 2. Evaluación Clínica Básica")
+        st.markdown("#### 2. Constantes Vitales")
+        col_v1, col_v2, col_v3, col_v4 = st.columns(4)
+        with col_v1:
+            fc = st.number_input("Frec. Cardíaca (bpm)", min_value=30, max_value=250, value=80)
+        with col_v2:
+            tas = st.number_input("Tensión Sistólica", min_value=40, max_value=300, value=120)
+        with col_v3:
+            spo2 = st.number_input("SpO2 (%)", min_value=50, max_value=100, value=98)
+        with col_v4:
+            temp = st.number_input("Temp (ºC)", min_value=30.0, max_value=45.0, value=36.5, step=0.1)
+
+    # Contenedor 3: Clínica (Antes era el 2)
+    with st.container(border=True):
+        st.markdown("#### 3. Evaluación Clínica Básica")
         col_clin1, col_clin2 = st.columns([1, 2])
         with col_clin1:
             dolor = st.slider("Escala Visual Analógica (EVA)", 0, 10, 5)
@@ -254,13 +272,16 @@ elif menu == "Nueva Admisión":
         with col_clin2:
             sintomas = st.text_area("Anamnesis de Enfermería", height=100, placeholder="Motivo de consulta principal y desarrollo de los síntomas...")
 
+        
     st.markdown("<br>", unsafe_allow_html=True) # Espaciado limpio
 
     # Botón Principal de Acción
     if st.button("Procesar Triaje Algorítmico", type="primary", use_container_width=True):
         if nombre and sip and sintomas:
             with st.spinner("Procesando constantes y anamnesis con IA Clínica..."):
-                resultado = motor_triaje(sintomas, dolor, edad)
+                
+                # LLAMADA ACTUALIZADA CON LAS CONSTANTES
+                resultado = motor_triaje(sintomas, dolor, edad, fc, tas, spo2, temp)
                 
                 if "error" not in resultado:
                     pdf_bytes = crear_pdf_completo(resultado, sintomas, nombre, sip, edad, dolor)
@@ -281,8 +302,6 @@ elif menu == "Nueva Admisión":
                     st.code(f"Fallo en el motor Gemini: {resultado.get('error')}")
         else:
             st.warning("Requisito legal: Los campos de Identificación y Anamnesis son obligatorios.")
-            st.code(f"Diagnóstico de ingeniería: {resultado.get('error')}")
-
 # Pantalla 3: HISTORIAL (REDISEÑADO)
 elif menu == "Historial de Pacientes":
     st.header("Archivo Histórico de Pacientes")
