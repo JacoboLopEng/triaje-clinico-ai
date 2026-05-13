@@ -97,41 +97,19 @@ if st.session_state.fase == 2:
     st.markdown("### 2️⃣ Cuestionario Dirigido (Generado por IA)")
     
     with st.container(border=True):
+        # Usamos la memoria guardada para que no desaparezca el motivo
         st.info(f"**Motivo registrado:** {st.session_state.datos_iniciales['motivo']}")
         st.markdown("Responde rápidamente a las siguientes cuestiones:")
         
-        # Generamos los selectores dinámicamente según lo que diga la IA
-        for i, pregunta in enumerate(st.session_state.preguntas_ia):
-            # Guardamos las respuestas en el diccionario
-            st.session_state.respuestas_enfermeria[pregunta] = st.radio(
-                pregunta, 
-                ["Sí", "No", "No valorable"], 
-                horizontal=True,
-                key=f"q_{i}" # Key única obligatoria en Streamlit
-            )
-
-    col_btn1, col_btn2 = st.columns([1, 1])
-    
-    with col_btn1:
-        # Botón por si el enfermero se equivoca y quiere empezar de cero
-        if st.button("🔙 Reiniciar Triaje", use_container_width=True):
-            st.session_state.fase = 1
-            st.session_state.preguntas_ia = []
-            st.rerun()
-
-    with col_btn2:
-        # Botón para lanzar el dictamen final
-        if st.button("Evaluar Triaje Final", type="primary", use_container_width=True):
-            with st.spinner("Calculando prioridad y diagnóstico diferencial..."):
-                
-                # AQUÍ LLAMAREMOS AL 'MOTOR B' EN EL FUTURO
-                
-                # Simulación de salida para visualizar la interfaz:
-                st.success("✅ Evaluación completada.")
-                st.error("🚨 PRIORIDAD: NARANJA (Atención < 10 min)")
-                
-                with st.expander("📄 Ver Informe Médico Preliminar", expanded=True):
-                    st.markdown("**Diagnóstico Diferencial Sugerido:**")
-                    st.markdown("- Apendicitis aguda\n- Úlcera péptica perforada\n- Cólico biliar")
-                    st.markdown("**Banderas Rojas Detectadas:**")
-                    st.markdown("- Abdomen rígido + Taquicardia (posible peritonitis)")
+        # EL BUCLE CRÍTICO: Aquí es donde se dibujan las preguntas de la IA
+        if st.session_state.preguntas_ia:
+            for i, pregunta in enumerate(st.session_state.preguntas_ia):
+                # Guardamos la respuesta directamente en el estado
+                st.session_state.respuestas_enfermeria[pregunta] = st.radio(
+                    pregunta, 
+                    ["No", "Sí", "No valorable"], # El 'No' por defecto es más seguro
+                    horizontal=True,
+                    key=f"pregunta_{i}" # ¡ESTO ES VITAL!
+                )
+        else:
+            st.error("⚠️ No se han podido cargar las preguntas. Reintente el triaje.")
