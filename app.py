@@ -134,40 +134,50 @@ def crear_pdf_completo(datos_ia, sintomas, nombre, sip, edad, dolor):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- 4. CONEXIÓN GROQ ---
+# --- 4. CONEXIÓN OPENAI ---
+from openai import OpenAI
+
 try:
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 except:
-    st.error("❌ Falta API Key")
+    st.error("❌ Falta API Key de OpenAI")
     st.stop()
-
 def motor_triaje(sintomas, dolor, edad):
-    prompt = f"""
+    # Separamos el rol del sistema y los datos del usuario para mayor rigor
+    system_prompt = """
     Actúa como un Jefe de Urgencias Hospitalarias experto en Triaje Avanzado.
-    Paciente: {edad} años. Nivel de dolor: {dolor}/10. 
-    Anamnesis: {sintomas}.
+    
+    INSTRUCCIONES DE RAZONAMIENTO CLÍNICO:
+    1. Analiza los síntomas y crúzalos con antecedentes médicos.
+    2. Identifica "Banderas Rojas" (Red Flags). Busca patologías subyacentes críticas (ej. isquemia, sepsis, shock embólico).
+    3. Si hay contradicciones (ej. riesgo embólico vs sangrado), evalúa la fisiopatología.
+    4. El 'plan de actuación' NUNCA debe contener medicación contraindicada para la etiología principal.
 
-    INSTRUCCIONES DE RAZONAMIENTO CLÍNICO (Chain of Thought):
-    1. Analiza los síntomas principales y cruzarlos con posibles antecedentes.
-    2. Identifica "Banderas Rojas" (Red Flags). No te quedes con el síntoma más evidente; busca patologías subyacentes críticas que justifiquen TODO el cuadro (ej. isquemia, sepsis, shock).
-    3. Si existen contradicciones (ej. riesgo embólico vs sangrado), evalúa cuidadosamente la fisiopatología antes de concluir.
-    4. El 'plan de actuación' NUNCA debe contener medicación contraindicada para la 'sospecha diagnóstica'.
+    EJEMPLO DE RAZONAMIENTO ESPERADO:
+    - Paciente 74 años, dolor 9/10, sangre oscura, FA sin Sintrom.
+    - Salida ideal -> Prioridad: ROJO. CIE-10: K55.0 (Isquemia vascular). Razonamiento: El riesgo embólico por FA sin medicar, más dolor agudo desproporcionado, sugiere oclusión arterial aguda. Acción: Prohibido anticoagulantes si hay sangrado activo. TAC urgente. Aviso a cirugía.
 
-    Salida JSON estricta:
-    {{
-        "color_triaje": "ROJO"|"NARANJA"|"AMARILLO"|"VERDE",
+    Debes devolver un JSON estricto con esta estructura:
+    {
+        "color_triaje": "ROJO|NARANJA|AMARILLO|VERDE",
         "cie10_codigo": "Código",
-        "cie10_descripcion": "Nombre patología exacta",
-        "accion": "Pruebas diagnósticas e intervención clínica inmediata",
-        "razonamiento": "Justificación clínica basada en fisiopatología y red flags"
-    }}
+        "cie10_descripcion": "Nombre patología",
+        "accion": "Instrucción clínica",
+        "razonamiento": "Justificación clínica basada en banderas rojas"
+    }
     """
-    # El resto de la función se queda igual (llamada a Groq, try/except, etc.)
+    
+    user_prompt = f"Paciente {edad} años. Nivel de dolor: {dolor}/10. Anamnesis: {sintomas}."
+
     try:
         chat = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile",
-            temperature=0, response_format={"type": "json_object"}
+            model="gpt-4o",
+            response_format={ "type": "json_object" },
+            temperature=0.1, # Temperatura muy baja para respuestas deterministas y médicas
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
         )
         return json.loads(chat.choices[0].message.content)
     except Exception as e:
