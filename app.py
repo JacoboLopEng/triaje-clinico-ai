@@ -115,30 +115,58 @@ if st.session_state.fase == 1:
         else:
             st.warning("⚠️ El motivo de consulta es obligatorio para orientar las preguntas.")
 
-# --- FASE 2 ---
+# --- FINAL DEL ARCHIVO (FASE 2) ---
 if st.session_state.fase == 2:
     st.markdown("### 2️⃣ Cuestionario Dirigido")
+    
     with st.container(border=True):
         st.info(f"**Motivo:** {st.session_state.datos_iniciales['motivo']}")
+        
         if st.session_state.preguntas_ia:
             for i, p in enumerate(st.session_state.preguntas_ia):
-                st.session_state.respuestas_enfermeria[p] = st.radio(p, ["No", "Sí", "No valorable"], horizontal=True, key=f"p_{i}")
-        
+                # Guardamos la respuesta en el diccionario
+                st.session_state.respuestas_enfermeria[p] = st.radio(
+                    p, 
+                    ["No", "Sí", "No valorable"], 
+                    horizontal=True, 
+                    key=f"p_{i}"
+                )
+        else:
+            st.error("⚠️ No hay preguntas cargadas.")
+
+    # ESTAS COLUMNAS DEBEN ESTAR DENTRO DEL IF DE LA FASE 2
     col1, col2 = st.columns(2)
+    
     with col1:
-        if st.button("🔙 Reiniciar"):
+        if st.button("🔙 Reiniciar Triaje", use_container_width=True):
             st.session_state.fase = 1
             st.rerun()
+            
     with col2:
-        if st.button("Evaluar Triaje Final", type="primary"):
-            with st.spinner("Evaluando..."):
-                res = motor_b_evaluador(st.session_state.datos_iniciales, st.session_state.respuestas_enfermeria)
+        if st.button("Evaluar Triaje Final", type="primary", use_container_width=True):
+            with st.spinner("Generando informe médico..."):
+                # LLAMADA AL MOTOR B
+                res = motor_b_evaluador(
+                    st.session_state.datos_iniciales, 
+                    st.session_state.respuestas_enfermeria
+                )
+                
                 if "error" not in res:
-                    c = res['color']
-                    if c == "ROJO": st.error(f"🚨 {c}")
-                    elif c == "NARANJA": st.warning(f"⚠️ {c}")
-                    else: st.success(f"✅ {c}")
-                    with st.expander("📄 INFORME MÉDICO", expanded=True):
-                        st.write("**Sospechas:**", res['informe']['sospechas'])
-                        st.write("**Alertas:**", res['informe']['alertas'])
-                        st.info(f"**Plan:** {res['informe']['plan']}")
+                    st.divider()
+                    # Mostrar Prioridad
+                    color = res['color']
+                    if color == "ROJO": st.error(f"🚨 PRIORIDAD: {color}")
+                    elif color == "NARANJA": st.warning(f"⚠️ PRIORIDAD: {color}")
+                    else: st.success(f"✅ PRIORIDAD: {color}")
+                    
+                    # Informe Desplegable
+                    with st.expander("📄 INFORME CLÍNICO DETALLADO", expanded=True):
+                        st.markdown("### Sospechas Clínicas")
+                        for s in res['informe']['sospechas']: st.write(f"📍 {s}")
+                        
+                        st.markdown("### Alertas (Red Flags)")
+                        for a in res['informe']['alertas']: st.write(f"🚩 {a}")
+                        
+                        st.info(f"**Plan de Acción:** {res['informe']['plan']}")
+                else:
+                    st.error(f"Error en el servidor: {res['error']}")
