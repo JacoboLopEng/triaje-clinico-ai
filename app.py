@@ -1,4 +1,6 @@
 import streamlit as st
+import google.generativeai as genai
+import json
 # --- MOTOR A: EL ENTREVISTADOR (Poner al principio del archivo) ---
 def motor_a_entrevistador(motivo, fc, tas, spo2, temp):
     prompt_entrevista = f"""
