@@ -1,5 +1,4 @@
 import streamlit as st
-from groq import Groq
 import datetime
 import json
 from fpdf import FPDF
