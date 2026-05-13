@@ -1,0 +1,15 @@
+[theme]
+# Azul clínico confiable (tipo corporativo)
+primaryColor = "#005a9c" 
+
+# Fondo general ligeramente grisáceo/azulado para no cansar la vista
+backgroundColor = "#f4f7f6" 
+
+# Fondo de los contenedores en blanco puro para contrastar
+secondaryBackgroundColor = "#ffffff" 
+
+# Texto en gris muy oscuro (menos agresivo que el negro puro)
+textColor = "#2c3e50" 
+
+# Tipografía limpia y sin serifas
+font = "sans serif"

@@ -165,15 +165,16 @@ def motor_triaje(sintomas, dolor, edad):
         return {"error": str(e)}
 
 # --- 5. INTERFAZ ---
-st.title("🏥 Sistema de Triaje Hospitalario")
-
+st.title("Sistema de Triaje Hospitalario")
+st.markdown("---")
+st.caption("v4.0 | Motor Analítico: Llama-3 70B | Entorno de Producción")
 tab1, tab2 = st.tabs(["➕ NUEVA ADMISIÓN", "🗂️ HISTORIA CLÍNICA"])
 
 # --- PESTAÑA 1: NUEVO INGRESO ---
 with tab1:
     # SECCIÓN DE DATOS PERSONALES (NUEVA)
     with st.container(border=True):
-        st.subheader("👤 Datos de Filiación (Identificación)")
+        st.subheader("Datos de Filiación")
         col_id1, col_id2, col_id3 = st.columns([2, 1, 1])
         with col_id1:
             nombre = st.text_input("Nombre y Apellidos", placeholder="Ej: Juan Pérez García")
@@ -184,7 +185,7 @@ with tab1:
 
     # SECCIÓN CLÍNICA
     with st.container(border=True):
-        st.subheader("🩺 Cuadro Clínico")
+        st.subheader("Evaluación Clínica")
         col_clin1, col_clin2 = st.columns([1, 2])
         with col_clin1:
             dolor = st.slider("Escala de Dolor (EVA)", 0, 10, 5, help="0 es sin dolor, 10 es el peor dolor imaginable")
@@ -193,7 +194,8 @@ with tab1:
             sintomas = st.text_area("Anamnesis (Síntomas)", height=100, placeholder="Describa qué le ocurre, desde cuándo y cómo empezó...")
 
     # BOTÓN DE ACCIÓN
-    if st.button("🚀 INICIAR TRIAJE Y GENERAR INFORME", type="primary", use_container_width=True):
+    
+if st.button("Procesar Triaje y Emitir Informe", type="primary", use_container_width=True):
         if nombre and sip and sintomas:
             with st.spinner("🔄 Procesando datos con Llama-3 y Protocolos Médicos..."):
                 resultado = motor_triaje(sintomas, dolor, edad)
