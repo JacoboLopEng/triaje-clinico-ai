@@ -88,7 +88,9 @@ if st.session_state.fase == 1:
     if st.button("Generar Preguntas Clave", type="primary", use_container_width=True):
         if motivo:
             with st.spinner("Generando cuestionario dirigido..."):
+
                 # 1. Limpiamos los datos
+                st.session_state.respuestas_enfermeria = {}
                 def limpiar(v): return v if v > 0 else "No medido"
                 
                 # 2. Llamamos a la IA
