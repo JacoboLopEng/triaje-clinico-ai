@@ -133,17 +133,20 @@ def crear_pdf_completo(datos_ia, sintomas, nombre, sip, edad, dolor):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- 4. CONEXIÓN OPENAI ---
-from openai import OpenAI
+# --- 4. CONEXIÓN GEMINI ---
+import google.generativeai as genai
+
 
 try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-except:
-    st.error("❌ Falta API Key de OpenAI")
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    # Usamos Gemini 1.5 Pro, ideal para razonamiento clínico complejo
+    model = genai.GenerativeModel('gemini-1.5-pro')
+except Exception as e:
+    st.error("❌ Error configurando Gemini")
     st.stop()
+
 def motor_triaje(sintomas, dolor, edad):
-    # Separamos el rol del sistema y los datos del usuario para mayor rigor
-    system_prompt = """
+    prompt_completo = f"""
     Actúa como un Jefe de Urgencias Hospitalarias experto en Triaje Avanzado.
     
     INSTRUCCIONES DE RAZONAMIENTO CLÍNICO:
@@ -156,29 +159,28 @@ def motor_triaje(sintomas, dolor, edad):
     - Paciente 74 años, dolor 9/10, sangre oscura, FA sin Sintrom.
     - Salida ideal -> Prioridad: ROJO. CIE-10: K55.0 (Isquemia vascular). Razonamiento: El riesgo embólico por FA sin medicar, más dolor agudo desproporcionado, sugiere oclusión arterial aguda. Acción: Prohibido anticoagulantes si hay sangrado activo. TAC urgente. Aviso a cirugía.
 
-    Debes devolver un JSON estricto con esta estructura:
-    {
-        "color_triaje": "ROJO|NARANJA|AMARILLO|VERDE",
+    Paciente real a evaluar:
+    Edad: {edad} años. 
+    Nivel de dolor: {dolor}/10. 
+    Anamnesis: {sintomas}.
+
+    Debes devolver UNICAMENTE un JSON estricto con esta estructura:
+    {{
+        "color_triaje": "ROJO"|"NARANJA"|"AMARILLO"|"VERDE",
         "cie10_codigo": "Código",
         "cie10_descripcion": "Nombre patología",
         "accion": "Instrucción clínica",
         "razonamiento": "Justificación clínica basada en banderas rojas"
-    }
+    }}
     """
-    
-    user_prompt = f"Paciente {edad} años. Nivel de dolor: {dolor}/10. Anamnesis: {sintomas}."
 
     try:
-        chat = client.chat.completions.create(
-            model="gpt-4o",
-            response_format={ "type": "json_object" },
-            temperature=0.1, # Temperatura muy baja para respuestas deterministas y médicas
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
+        # Forzamos a Gemini a responder en formato JSON
+        respuesta = model.generate_content(
+            prompt_completo,
+            generation_config={"response_mime_type": "application/json", "temperature": 0.1}
         )
-        return json.loads(chat.choices[0].message.content)
+        return json.loads(respuesta.text)
     except Exception as e:
         return {"error": str(e)}
 
@@ -259,7 +261,7 @@ elif menu == "Nueva Admisión":
         if nombre and sip and sintomas:
             with st.spinner("Procesando constantes y anamnesis con IA Clínica..."):
                 resultado = motor_triaje(sintomas, dolor, edad)
-                st.warning(f"🔍 DEBUG OPENAI: {resultado}")
+                
                 if "error" not in resultado:
                     pdf_bytes = crear_pdf_completo(resultado, sintomas, nombre, sip, edad, dolor)
                     guardar_paciente(nombre, sip, edad, dolor, sintomas, resultado, pdf_bytes)
