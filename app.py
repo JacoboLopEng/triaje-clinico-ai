@@ -1,5 +1,29 @@
 import streamlit as st
-
+# --- MOTOR A: EL ENTREVISTADOR (Poner al principio del archivo) ---
+def motor_a_entrevistador(motivo, fc, tas, spo2, temp):
+    prompt_entrevista = f"""
+    Eres un médico experto en triaje de urgencias. Tu objetivo es generar 3 preguntas CLAVE de Sí/No para un paciente.
+    
+    DATOS ACTUALES:
+    - Motivo: {motivo}
+    - Constantes: FC:{fc}, TAS:{tas}, SpO2:{spo2}, Temp:{temp}
+    
+    INSTRUCCIONES:
+    1. Si falta alguna constante vital (pone "No medido"), pregunta por síntomas físicos relacionados (ej: si no hay TAS, preguntar por mareo).
+    2. Las preguntas deben descartar emergencias vitales (Banderas Rojas).
+    3. Responde ÚNICAMENTE con un JSON: {{"preguntas": ["P1", "P2", "P3"]}}
+    """
+    try:
+        import google.generativeai as genai
+        import json
+        model = genai.GenerativeModel('gemini-2.5-pro')
+        respuesta = model.generate_content(
+            prompt_entrevista,
+            generation_config={"response_mime_type": "application/json", "temperature": 0.5}
+        )
+        return json.loads(respuesta.text).get("preguntas", [])
+    except Exception as e:
+        return [f"Error de IA: {str(e)}"]
 # --- INICIALIZACIÓN DE LA MEMORIA (SESSION STATE) ---
 # Esto evita que la app se reinicie al pulsar botones
 if 'fase' not in st.session_state:
