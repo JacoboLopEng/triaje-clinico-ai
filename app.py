@@ -279,6 +279,7 @@ elif menu == "Nueva Admisión":
                     st.error("Error de comunicación con el servidor central de diagnóstico.")
         else:
             st.warning("Requisito legal: Los campos de Identificación y Anamnesis son obligatorios.")
+            st.code(f"Diagnóstico de ingeniería: {resultado.get('error')}")
 
 # Pantalla 3: HISTORIAL (REDISEÑADO)
 elif menu == "Historial de Pacientes":
