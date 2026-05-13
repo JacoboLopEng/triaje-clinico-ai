@@ -37,6 +37,7 @@ def motor_b_evaluador(datos_iniciales, respuestas):
     1. Color triaje (ROJO, NARANJA, AMARILLO, VERDE).
     2. Informe: Sospechas (3), Alertas, Plan.
     Responde ÚNICAMENTE JSON: {{"color": "C", "informe": {{"sospechas": [], "alertas": [], "plan": ""}}}}
+    Sé realista. No todos los dolores torácicos son infartos. Si el paciente está estable y no hay banderas rojas claras,considera causas leves como ansiedad o dolor osteomuscular.
     """
     try:
         model = genai.GenerativeModel('gemini-2.5-pro')
