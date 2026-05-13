@@ -140,7 +140,7 @@ import google.generativeai as genai
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     # Usamos Gemini 1.5 Pro, ideal para razonamiento clínico complejo
-    model = genai.GenerativeModel('gemini-1.5-pro-latest')
+    model = genai.GenerativeModel('gemini-2.5-pro')
 except Exception as e:
     st.error("❌ Error configurando Gemini")
     st.stop()
