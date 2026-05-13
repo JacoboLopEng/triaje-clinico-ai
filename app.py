@@ -259,7 +259,7 @@ elif menu == "Nueva Admisión":
         if nombre and sip and sintomas:
             with st.spinner("Procesando constantes y anamnesis con IA Clínica..."):
                 resultado = motor_triaje(sintomas, dolor, edad)
-                
+                st.warning(f"🔍 DEBUG OPENAI: {resultado}")
                 if "error" not in resultado:
                     pdf_bytes = crear_pdf_completo(resultado, sintomas, nombre, sip, edad, dolor)
                     guardar_paciente(nombre, sip, edad, dolor, sintomas, resultado, pdf_bytes)
