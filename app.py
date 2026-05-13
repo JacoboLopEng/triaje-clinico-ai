@@ -143,17 +143,26 @@ except:
 
 def motor_triaje(sintomas, dolor, edad):
     prompt = f"""
-    Eres MÉDICO DE URGENCIAS. Paciente {edad} años, dolor {dolor}/10. Síntomas: {sintomas}.
-    Asigna CIE-10 más probable.
+    Actúa como un Jefe de Urgencias Hospitalarias experto en Triaje Avanzado.
+    Paciente: {edad} años. Nivel de dolor: {dolor}/10. 
+    Anamnesis: {sintomas}.
+
+    INSTRUCCIONES DE RAZONAMIENTO CLÍNICO (Chain of Thought):
+    1. Analiza los síntomas principales y cruzarlos con posibles antecedentes.
+    2. Identifica "Banderas Rojas" (Red Flags). No te quedes con el síntoma más evidente; busca patologías subyacentes críticas que justifiquen TODO el cuadro (ej. isquemia, sepsis, shock).
+    3. Si existen contradicciones (ej. riesgo embólico vs sangrado), evalúa cuidadosamente la fisiopatología antes de concluir.
+    4. El 'plan de actuación' NUNCA debe contener medicación contraindicada para la 'sospecha diagnóstica'.
+
     Salida JSON estricta:
     {{
         "color_triaje": "ROJO"|"NARANJA"|"AMARILLO"|"VERDE",
         "cie10_codigo": "Código",
-        "cie10_descripcion": "Nombre patología",
-        "accion": "Instrucción clínica",
-        "razonamiento": "Justificación breve"
+        "cie10_descripcion": "Nombre patología exacta",
+        "accion": "Pruebas diagnósticas e intervención clínica inmediata",
+        "razonamiento": "Justificación clínica basada en fisiopatología y red flags"
     }}
     """
+    # El resto de la función se queda igual (llamada a Groq, try/except, etc.)
     try:
         chat = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
