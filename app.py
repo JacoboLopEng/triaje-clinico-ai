@@ -14,6 +14,7 @@ def motor_a_entrevistador(motivo, fc, tas, spo2, temp):
     1. Si falta alguna constante vital (pone "No medido"), pregunta por síntomas físicos relacionados (ej: si no hay TAS, preguntar por mareo).
     2. Las preguntas deben descartar emergencias vitales (Banderas Rojas).
     3. Responde ÚNICAMENTE con un JSON: {{"preguntas": ["P1", "P2", "P3"]}}
+    Si el motivo es vago (ej: 'me duele el pecho'), tus preguntas DEBEN ir dirigidas a buscar síntomas de ansiedad o dolores mecánicos (ej: '¿El dolor empeora al tocarse la zona?' o '¿Siente hormigueo por nervios?'). No asumas gravedad por defecto."
     """
     try:
         import google.generativeai as genai
