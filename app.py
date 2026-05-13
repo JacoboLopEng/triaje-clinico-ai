@@ -19,14 +19,24 @@ st.markdown("### 1️⃣ Triaje Inicial (Enfermería)")
 
 with st.container(border=True):
     col_v1, col_v2, col_v3, col_v4 = st.columns(4)
+   # NUEVO: Checkbox de control
+medicion_disponible = st.checkbox("¿Dispone de dispositivos de medición? (Tensión, pulsómetro, etc.)", value=False)
+
+if medicion_disponible:
+    st.markdown("#### 2. Constantes Vitales")
+    col_v1, col_v2, col_v3, col_v4 = st.columns(4)
     with col_v1:
-        fc = st.number_input("FC (bpm)", 30, 250, 80)
+        fc = st.number_input("Frec. Cardíaca (bpm)", 30, 250, 80)
     with col_v2:
-        tas = st.number_input("TAS (mmHg)", 40, 300, 120)
+        tas = st.number_input("Tensión Sistólica", 40, 300, 120)
     with col_v3:
         spo2 = st.number_input("SpO2 (%)", 50, 100, 98)
     with col_v4:
         temp = st.number_input("Temp (ºC)", 30.0, 45.0, 36.5, step=0.1)
+else:
+    # Si no hay medición, asignamos 'None' o un valor neutro para que la IA lo sepa
+    fc = tas = spo2 = temp = None
+    st.info("ℹ️ El triaje se realizará basándose exclusivamente en la sintomatología declarada.")
 
     motivo = st.text_input("Motivo de consulta principal (Breve)", placeholder="Ej: Dolor abdominal y vómitos desde hace 2 horas")
 
