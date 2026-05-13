@@ -45,6 +45,13 @@ if st.session_state.fase == 1:
                 # Limpiamos los datos para enviarlos a la IA
                 def limpiar(v): return v if v > 0 else "No medido"
                 
+                preguntas = motor_a_entrevistador(
+                motivo, 
+                limpiar(fc), 
+                limpiar(tas), 
+                limpiar(spo2), 
+                limpiar(temp)
+                )
                 st.session_state.datos_iniciales = {
                     "motivo": motivo,
                     "fc": limpiar(fc),
@@ -53,12 +60,7 @@ if st.session_state.fase == 1:
                     "temp": limpiar(temp)
                 }
                 
-                # SIMULACIÓN DEL MOTOR A (Esto lo cambiaremos por la IA real ahora)
-                st.session_state.preguntas_ia = [
-                    "¿El dolor ha aparecido de forma súbita?",
-                    "¿Nota el abdomen especialmente rígido?",
-                    "¿Ha tenido desmayos o pérdida de conciencia?"
-                ]
+                
                 st.session_state.fase = 2
                 st.rerun()
         else:
