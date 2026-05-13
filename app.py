@@ -164,101 +164,137 @@ def motor_triaje(sintomas, dolor, edad):
     except Exception as e:
         return {"error": str(e)}
 
-# --- 5. INTERFAZ ---
-st.title("Sistema de Triaje Hospitalario")
-st.markdown("---")
-st.caption("v4.0 | Motor Analítico: Llama-3 70B | Entorno de Producción")
-tab1, tab2 = st.tabs(["➕ NUEVA ADMISIÓN", "🗂️ HISTORIA CLÍNICA"])
+# --- 5. INTERFAZ DE USUARIO (HOSPITAL GRADE) ---
 
-# --- PESTAÑA 1: NUEVO INGRESO ---
-with tab1:
-    # SECCIÓN DE DATOS PERSONALES (NUEVA)
+# 5.1. BARRA LATERAL (SIDEBAR)
+with st.sidebar:
+    st.title("TriajeClinico.ai")
+    st.caption("Sistema de Gestión de Urgencias")
+    st.markdown("---")
+    
+    # Menú de navegación clínico
+    menu = st.radio(
+        "Panel de Navegación", 
+        ["Centro de Operaciones", "Nueva Admisión", "Historial de Pacientes"]
+    )
+    
+    st.markdown("---")
+    # Simulación de sesión de usuario (Trazabilidad)
+    st.info("👨‍⚕️ Facultativo en turno:\n\n**Dr. Jacobo**\n\nID Colegiado: 4600-UPV")
+    st.caption(f"Fecha: {datetime.datetime.now().strftime('%d/%m/%Y')}")
+
+# 5.2. ENRUTAMIENTO DE PANTALLAS
+
+# Pantalla 1: DASHBOARD (NUEVA)
+if menu == "Centro de Operaciones":
+    st.header("Centro de Operaciones")
+    st.markdown("Visión general de la planta de Urgencias en tiempo real.")
+    
+    casos = obtener_historial()
+    total_pacientes = len(casos)
+    
+    # KPIs Rápidos
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Pacientes Atendidos (Turno)", total_pacientes)
+    col2.metric("Tiempo Medio Espera", "14 min") # Dato simulado por ahora
+    col3.metric("Saturación de Planta", f"{min(total_pacientes * 5, 100)}%") # Dato simulado
+    
+    st.markdown("---")
+    st.subheader("Últimos Registros Clínicos")
+    if casos:
+        # Mostramos los últimos 5 de forma limpia
+        for caso in casos[:5]:
+            st.markdown(f"**{caso[1]}** | Paciente: {caso[2]} | Prioridad IA: **{caso[7]}**")
+    else:
+        st.info("No hay actividad registrada en este turno.")
+
+# Pantalla 2: FORMULARIO DE ADMISIÓN (REDISEÑADO)
+elif menu == "Nueva Admisión":
+    st.header("Protocolo de Admisión y Triaje")
+    st.markdown("Cumplimente los datos del paciente para la evaluación algorítmica inicial.")
+    
+    # Contenedor 1: Filiación
     with st.container(border=True):
-        st.subheader("Datos de Filiación")
+        st.markdown("#### 1. Datos de Filiación")
         col_id1, col_id2, col_id3 = st.columns([2, 1, 1])
         with col_id1:
-            nombre = st.text_input("Nombre y Apellidos", placeholder="Ej: Juan Pérez García")
+            nombre = st.text_input("Nombre y Apellidos completos")
         with col_id2:
-            sip = st.text_input("Nº SIP / DNI", placeholder="Ej: 12345678-A")
+            sip = st.text_input("Nº SIP / Pasaporte")
         with col_id3:
-            edad = st.number_input("Edad", 0, 110, 30)
+            edad = st.number_input("Edad (Años)", 0, 120, 30)
 
-    # SECCIÓN CLÍNICA
+    # Contenedor 2: Clínica
     with st.container(border=True):
-        st.subheader("Evaluación Clínica")
+        st.markdown("#### 2. Evaluación Clínica Básica")
         col_clin1, col_clin2 = st.columns([1, 2])
         with col_clin1:
-            dolor = st.slider("Escala de Dolor (EVA)", 0, 10, 5, help="0 es sin dolor, 10 es el peor dolor imaginable")
-            st.caption("Seleccione la intensidad del dolor")
+            dolor = st.slider("Escala Visual Analógica (EVA)", 0, 10, 5)
+            st.caption("0: Sin dolor | 10: Dolor insoportable")
         with col_clin2:
-            sintomas = st.text_area("Anamnesis (Síntomas)", height=100, placeholder="Describa qué le ocurre, desde cuándo y cómo empezó...")
+            sintomas = st.text_area("Anamnesis de Enfermería", height=100, placeholder="Motivo de consulta principal y desarrollo de los síntomas...")
 
-    # BOTÓN DE ACCIÓN
-    
-if st.button("Procesar Triaje y Emitir Informe", type="primary", use_container_width=True):
+    st.markdown("<br>", unsafe_allow_html=True) # Espaciado limpio
+
+    # Botón Principal de Acción
+    if st.button("Procesar Triaje Algorítmico", type="primary", use_container_width=True):
         if nombre and sip and sintomas:
-            with st.spinner("🔄 Procesando datos con Llama-3 y Protocolos Médicos..."):
+            with st.spinner("Procesando constantes y anamnesis con IA Clínica..."):
                 resultado = motor_triaje(sintomas, dolor, edad)
                 
                 if "error" not in resultado:
-                    # 1. Crear PDF
                     pdf_bytes = crear_pdf_completo(resultado, sintomas, nombre, sip, edad, dolor)
-                    
-                    # 2. Guardar en BD
                     guardar_paciente(nombre, sip, edad, dolor, sintomas, resultado, pdf_bytes)
                     
-                    # 3. Feedback Visual
                     color = resultado.get('color_triaje')
-                    if color == "ROJO": st.error(f"⚠️ PRIORIDAD MÁXIMA: {color}")
-                    elif color == "NARANJA": st.warning(f"⚠️ PRIORIDAD ALTA: {color}")
-                    elif color == "AMARILLO": st.warning(f"PRIORIDAD MEDIA: {color}")
-                    else: st.success(f"PRIORIDAD BAJA: {color}")
+                    if color == "ROJO": st.error(f"PRIORIDAD CRÍTICA (Nivel 1): {color} - ATENCIÓN INMEDIATA")
+                    elif color == "NARANJA": st.warning(f"PRIORIDAD MUY URGENTE (Nivel 2): {color} - MAX 10 MIN")
+                    elif color == "AMARILLO": st.warning(f"PRIORIDAD URGENTE (Nivel 3): {color} - MAX 60 MIN")
+                    else: st.success(f"PRIORIDAD ESTÁNDAR: {color} - ESPERA SEGURA")
                     
-                    st.toast("Paciente registrado correctamente", icon="✅")
-                    
-                    # 4. Descarga
+                    # Descarga del PDF con diseño formal
                     b64 = base64.b64encode(pdf_bytes).decode()
-                    href = f'<a href="data:application/pdf;base64,{b64}" download="Informe_{nombre.replace(" ","_")}.pdf"><button style="background-color:#2e7d32;color:white;padding:12px;border:none;border-radius:5px;cursor:pointer;width:100%">📄 DESCARGAR INFORME OFICIAL</button></a>'
+                    href = f'<a href="data:application/pdf;base64,{b64}" download="Historia_{sip}.pdf" style="text-decoration: none;"><div style="background-color:#005a9c;color:white;padding:12px;border-radius:4px;text-align:center;font-weight:bold;margin-top:15px;">📥 DESCARGAR HISTORIA CLÍNICA FIRMADA</div></a>'
                     st.markdown(href, unsafe_allow_html=True)
                 else:
-                    st.error("Error al conectar con el motor de IA.")
+                    st.error("Error de comunicación con el servidor central de diagnóstico.")
         else:
-            st.warning("⚠️ Por favor, rellene los campos de Nombre, SIP y Síntomas para poder emitir un informe legal.")
+            st.warning("Requisito legal: Los campos de Identificación y Anamnesis son obligatorios.")
 
-# --- PESTAÑA 2: HISTORIAL ---
-with tab2:
-    st.subheader("Listado de Pacientes Atendidos")
-    if st.button("🔄 Actualizar listado"):
-        st.rerun()
-
+# Pantalla 3: HISTORIAL (REDISEÑADO)
+elif menu == "Historial de Pacientes":
+    st.header("Archivo Histórico de Pacientes")
+    st.markdown("Registro inmutable de atenciones en Urgencias.")
+    
     casos = obtener_historial()
     
     if casos:
         for caso in casos:
-            # Estructura de 'caso': 
-            # id(0), fecha(1), nombre(2), sip(3), edad(4), dolor(5), sintomas(6), prioridad(7), diagnostico(8), pdf(9)
-            id_caso = caso[0]
-            nombre_paciente = caso[2]
-            prioridad = caso[7]
+            id_caso, fecha, nombre_p, sip_p, edad_p, dolor_p, sintomas_p, prioridad, diagnostico, pdf = caso
             
-            icono = "⚪"
-            if prioridad == "ROJO": icono = "🔴"
-            elif prioridad == "NARANJA": icono = "🟠"
-            elif prioridad == "AMARILLO": icono = "🟡"
-            elif prioridad == "VERDE": icono = "🟢"
+            # Asignación de colores corporativos según prioridad
+            color_borde = "grey"
+            if prioridad == "ROJO": color_borde = "red"
+            elif prioridad == "NARANJA": color_borde = "orange"
+            elif prioridad == "AMARILLO": color_borde = "#d4b800"
+            elif prioridad == "VERDE": color_borde = "green"
             
-            with st.expander(f"{icono} {caso[1]} | {nombre_paciente} (SIP: {caso[3]})"):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.write(f"**Diagnóstico:** {caso[8]}")
-                    st.caption(f"Síntomas: {caso[6]}")
-                with c2:
-                    st.download_button(
-                        label="📄 VER INFORME",
-                        data=caso[9],
-                        file_name=f"Informe_{nombre_paciente}_{id_caso}.pdf",
-                        mime="application/pdf",
-                        key=f"hist_{id_caso}"
-                    )
+            # Tarjetas de paciente clínicas (usando markdown y HTML seguro)
+            st.markdown(f"""
+            <div style="border-left: 5px solid {color_borde}; padding: 10px; background-color: #f9f9f9; border-radius: 5px; margin-bottom: 10px;">
+                <strong>{fecha} | {nombre_p} (SIP: {sip_p})</strong><br>
+                <span style="color: #555; font-size: 0.9em;">CIE-10: {diagnostico}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Botón de descarga adosado a la tarjeta
+            st.download_button(
+                label="Recuperar Informe PDF",
+                data=pdf,
+                file_name=f"Historia_{sip_p}_{fecha[:10]}.pdf",
+                mime="application/pdf",
+                key=f"hist_{id_caso}"
+            )
+            st.markdown("---")
     else:
-        st.info("No hay registros en la base de datos.")
+        st.info("La base de datos del archivo se encuentra vacía.")
