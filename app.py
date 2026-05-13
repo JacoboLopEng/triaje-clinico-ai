@@ -24,6 +24,26 @@ def motor_a_entrevistador(motivo, fc, tas, spo2, temp):
         return json.loads(respuesta.text).get("preguntas", [])
     except Exception as e:
         return [f"Error de IA: {str(e)}"]
+    
+    # --- MOTOR B: EL EVALUADOR ---
+def motor_b_evaluador(datos_iniciales, respuestas):
+    prompt_final = f"""
+    Eres un Jefe de Urgencias. Evalúa este triaje.
+    DATOS INICIALES: {datos_iniciales}
+    RESPUESTAS: {respuestas}
+    TAREAS:
+    1. Color triaje (ROJO, NARANJA, AMARILLO, VERDE).
+    2. Informe: Sospechas (3), Alertas, Plan.
+    Responde ÚNICAMENTE JSON: {{"color": "C", "informe": {{"sospechas": [], "alertas": [], "plan": ""}}}}
+    """
+    try:
+        model = genai.GenerativeModel('gemini-2.5-pro')
+        res = model.generate_content(prompt_final, generation_config={"response_mime_type": "application/json"})
+        return json.loads(res.text)
+    except Exception as e:
+        return {"error": str(e)}
+
+        
 # --- INICIALIZACIÓN DE LA MEMORIA (SESSION STATE) ---
 # Esto evita que la app se reinicie al pulsar botones
 if 'fase' not in st.session_state:
@@ -95,26 +115,30 @@ if st.session_state.fase == 1:
         else:
             st.warning("⚠️ El motivo de consulta es obligatorio para orientar las preguntas.")
 
-# ---------------------------------------------------------
-# FASE 2: CUESTIONARIO DINÁMICO Y DIAGNÓSTICO
-# ---------------------------------------------------------
+# --- FASE 2 ---
 if st.session_state.fase == 2:
-    st.markdown("### 2️⃣ Cuestionario Dirigido (Generado por IA)")
-    
+    st.markdown("### 2️⃣ Cuestionario Dirigido")
     with st.container(border=True):
-        # Usamos la memoria guardada para que no desaparezca el motivo
-        st.info(f"**Motivo registrado:** {st.session_state.datos_iniciales['motivo']}")
-        st.markdown("Responde rápidamente a las siguientes cuestiones:")
-        
-        # EL BUCLE CRÍTICO: Aquí es donde se dibujan las preguntas de la IA
+        st.info(f"**Motivo:** {st.session_state.datos_iniciales['motivo']}")
         if st.session_state.preguntas_ia:
-            for i, pregunta in enumerate(st.session_state.preguntas_ia):
-                # Guardamos la respuesta directamente en el estado
-                st.session_state.respuestas_enfermeria[pregunta] = st.radio(
-                    pregunta, 
-                    ["No", "Sí", "No valorable"], # El 'No' por defecto es más seguro
-                    horizontal=True,
-                    key=f"pregunta_{i}" # ¡ESTO ES VITAL!
-                )
-        else:
-            st.error("⚠️ No se han podido cargar las preguntas. Reintente el triaje.")
+            for i, p in enumerate(st.session_state.preguntas_ia):
+                st.session_state.respuestas_enfermeria[p] = st.radio(p, ["No", "Sí", "No valorable"], horizontal=True, key=f"p_{i}")
+        
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔙 Reiniciar"):
+            st.session_state.fase = 1
+            st.rerun()
+    with col2:
+        if st.button("Evaluar Triaje Final", type="primary"):
+            with st.spinner("Evaluando..."):
+                res = motor_b_evaluador(st.session_state.datos_iniciales, st.session_state.respuestas_enfermeria)
+                if "error" not in res:
+                    c = res['color']
+                    if c == "ROJO": st.error(f"🚨 {c}")
+                    elif c == "NARANJA": st.warning(f"⚠️ {c}")
+                    else: st.success(f"✅ {c}")
+                    with st.expander("📄 INFORME MÉDICO", expanded=True):
+                        st.write("**Sospechas:**", res['informe']['sospechas'])
+                        st.write("**Alertas:**", res['informe']['alertas'])
+                        st.info(f"**Plan:** {res['informe']['plan']}")
