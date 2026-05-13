@@ -278,6 +278,7 @@ elif menu == "Nueva Admisión":
                     st.markdown(href, unsafe_allow_html=True)
                 else:
                     st.error("Error de comunicación con el servidor central de diagnóstico.")
+                    st.code(f"Fallo en el motor Gemini: {resultado.get('error')}")
         else:
             st.warning("Requisito legal: Los campos de Identificación y Anamnesis son obligatorios.")
             st.code(f"Diagnóstico de ingeniería: {resultado.get('error')}")
