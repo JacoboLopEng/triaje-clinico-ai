@@ -66,16 +66,22 @@ if st.session_state.fase == 1:
     if st.button("Generar Preguntas Clave", type="primary", use_container_width=True):
         if motivo:
             with st.spinner("Generando cuestionario dirigido..."):
-                # Limpiamos los datos para enviarlos a la IA
+                # 1. Limpiamos los datos
                 def limpiar(v): return v if v > 0 else "No medido"
                 
-                preguntas = motor_a_entrevistador(
-                motivo, 
-                limpiar(fc), 
-                limpiar(tas), 
-                limpiar(spo2), 
-                limpiar(temp)
+                # 2. Llamamos a la IA
+                preguntas_generadas = motor_a_entrevistador(
+                    motivo, 
+                    limpiar(fc), 
+                    limpiar(tas), 
+                    limpiar(spo2), 
+                    limpiar(temp)
                 )
+                
+                # 3. GUARDAMOS EN MEMORIA (Esto es lo que te faltaba)
+                st.session_state.preguntas_ia = preguntas_generadas
+                
+                # 4. Guardamos el resto de datos
                 st.session_state.datos_iniciales = {
                     "motivo": motivo,
                     "fc": limpiar(fc),
@@ -83,7 +89,6 @@ if st.session_state.fase == 1:
                     "spo2": limpiar(spo2),
                     "temp": limpiar(temp)
                 }
-                
                 
                 st.session_state.fase = 2
                 st.rerun()
