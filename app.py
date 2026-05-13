@@ -15,47 +15,54 @@ st.title("🏥 TriajeClinico.ai - Anamnesis Dirigida")
 # ---------------------------------------------------------
 # FASE 1: CONSTANTES Y MOTIVO DE CONSULTA
 # ---------------------------------------------------------
-st.markdown("### 1️⃣ Triaje Inicial (Enfermería)")
-
-with st.container(border=True):
-    col_v1, col_v2, col_v3, col_v4 = st.columns(4)
-   # NUEVO: Checkbox de control
-medicion_disponible = st.checkbox("¿Dispone de dispositivos de medición? (Tensión, pulsómetro, etc.)", value=False)
-
-if medicion_disponible:
-    st.markdown("#### 2. Constantes Vitales")
-    col_v1, col_v2, col_v3, col_v4 = st.columns(4)
-    with col_v1:
-        fc = st.number_input("Frec. Cardíaca (bpm)", 30, 250, 80)
-    with col_v2:
-        tas = st.number_input("Tensión Sistólica", 40, 300, 120)
-    with col_v3:
-        spo2 = st.number_input("SpO2 (%)", 50, 100, 98)
-    with col_v4:
-        temp = st.number_input("Temp (ºC)", 30.0, 45.0, 36.5, step=0.1)
-else:
-    # Si no hay medición, asignamos 'None' o un valor neutro para que la IA lo sepa
-    fc = tas = spo2 = temp = None
-    st.info("ℹ️ El triaje se realizará basándose exclusivamente en la sintomatología declarada.")
-
-    motivo = st.text_input("Motivo de consulta principal (Breve)", placeholder="Ej: Dolor abdominal y vómitos desde hace 2 horas")
-
-# Botón para saltar a la Fase 2
 if st.session_state.fase == 1:
+    st.markdown("### 1️⃣ Triaje Inicial (Enfermería)")
+
+    # Bloque de Constantes Vitales Independientes
+    with st.container(border=True):
+        st.markdown("#### Parámetros Biométricos")
+        st.caption("Deje en 0 aquellos parámetros que no haya podido medir.")
+        
+        col_v1, col_v2, col_v3, col_v4 = st.columns(4)
+        with col_v1:
+            fc = st.number_input("FC (bpm)", 0, 250, 0)
+        with col_v2:
+            tas = st.number_input("TAS (mmHg)", 0, 300, 0)
+        with col_v3:
+            spo2 = st.number_input("SpO2 (%)", 0, 100, 0)
+        with col_v4:
+            temp = st.number_input("Temp (ºC)", 0.0, 45.0, 0.0, step=0.1)
+
+    # Bloque de Motivo de Consulta
+    with st.container(border=True):
+        st.markdown("#### Motivo de la Urgencia")
+        motivo = st.text_input("¿Qué le ocurre al paciente?", placeholder="Ej: Dolor abdominal fuerte...")
+
+    # Botón para generar preguntas
     if st.button("Generar Preguntas Clave", type="primary", use_container_width=True):
         if motivo:
-            with st.spinner("Analizando síntomas y generando cuestionario..."):
-                # AQUÍ LLAMAREMOS AL 'MOTOR A' EN EL FUTURO
-                # Por ahora, simulamos que la IA nos devuelve estas preguntas:
+            with st.spinner("Generando cuestionario dirigido..."):
+                # Limpiamos los datos para enviarlos a la IA
+                def limpiar(v): return v if v > 0 else "No medido"
+                
+                st.session_state.datos_iniciales = {
+                    "motivo": motivo,
+                    "fc": limpiar(fc),
+                    "tas": limpiar(tas),
+                    "spo2": limpiar(spo2),
+                    "temp": limpiar(temp)
+                }
+                
+                # SIMULACIÓN DEL MOTOR A (Esto lo cambiaremos por la IA real ahora)
                 st.session_state.preguntas_ia = [
-                    "¿El dolor es mayor a 7 sobre 10?",
-                    "¿El abdomen está duro o rígido a la palpación?",
-                    "¿Ha habido presencia de sangre en vómitos o heces?"
+                    "¿El dolor ha aparecido de forma súbita?",
+                    "¿Nota el abdomen especialmente rígido?",
+                    "¿Ha tenido desmayos o pérdida de conciencia?"
                 ]
-                st.session_state.fase = 2 # Pasamos a la siguiente fase
-                st.rerun() # Forzamos recarga para mostrar las preguntas
+                st.session_state.fase = 2
+                st.rerun()
         else:
-            st.warning("⚠️ Introduce un motivo de consulta para continuar.")
+            st.warning("⚠️ El motivo de consulta es obligatorio para orientar las preguntas.")
 
 # ---------------------------------------------------------
 # FASE 2: CUESTIONARIO DINÁMICO Y DIAGNÓSTICO
